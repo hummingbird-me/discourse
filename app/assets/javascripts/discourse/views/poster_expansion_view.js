@@ -20,7 +20,7 @@ Discourse.PosterExpansionView = Discourse.View.extend({
     Em.run.schedule('afterRender', function() {
       if (post) {
         var $post = $('#' + post.get('postElementId')),
-            $avatar = $('.topic-avatar img.avatar', $post),
+            $avatar = $('.topic-avatar .avatar', $post),
             position = $avatar.offset();
 
         if (position) {

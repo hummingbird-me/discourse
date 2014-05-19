@@ -118,11 +118,6 @@ class TopicView
     Summarize.new(desired_post.cooked).summary
   end
 
-  def image_url
-    return nil if desired_post.blank?
-    desired_post.user.try(:small_avatar_url)
-  end
-
   def filter_posts(opts = {})
     return filter_posts_near(opts[:post_number].to_i) if opts[:post_number].present?
     return filter_posts_by_ids(opts[:post_ids]) if opts[:post_ids].present?

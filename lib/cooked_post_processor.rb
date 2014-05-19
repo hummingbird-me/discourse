@@ -5,7 +5,6 @@ require_dependency 'url_helper'
 
 class CookedPostProcessor
   include ActionView::Helpers::NumberHelper
-  include UrlHelper
 
   def initialize(post, opts={})
     @dirty = false
@@ -94,8 +93,7 @@ class CookedPostProcessor
   end
 
   def get_size(url)
-    absolute_url = url
-    absolute_url = Discourse.base_url_no_prefix + absolute_url if absolute_url =~ /^\/[^\/]/
+    absolute_url = UrlHelper.absolute(url)
     # FastImage fails when there's no scheme
     absolute_url = SiteSetting.scheme + ":" + absolute_url if absolute_url.start_with?("//")
     return unless is_valid_image_url?(absolute_url)
@@ -209,12 +207,12 @@ class CookedPostProcessor
   def optimize_urls
     @doc.search("a").each do |a|
       href = a["href"].to_s
-      a["href"] = schemaless absolute(href) if is_local(href)
+      a["href"] = UrlHelper.schemaless UrlHelper.absolute(href) if UrlHelper.is_local(href)
     end
 
     @doc.search("img").each do |img|
       src = img["src"].to_s
-      img["src"] = schemaless absolute(src) if is_local(src)
+      img["src"] = UrlHelper.schemaless UrlHelper.absolute(src) if UrlHelper.is_local(src)
     end
   end
 

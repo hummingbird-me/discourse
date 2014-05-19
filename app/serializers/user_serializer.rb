@@ -8,7 +8,7 @@ class UserSerializer < BasicUserSerializer
              :bio_cooked,
              :created_at,
              :website,
-             :profile_background,
+             :profile_background_url,
              :can_edit,
              :can_edit_username,
              :can_edit_email,
@@ -63,14 +63,11 @@ class UserSerializer < BasicUserSerializer
                      :external_links_in_new_tab,
                      :dynamic_favicon,
                      :enable_quoting,
-                     :use_uploaded_avatar,
-                     :has_uploaded_avatar,
-                     :gravatar_template,
-                     :uploaded_avatar_template,
                      :muted_category_ids,
                      :tracked_category_ids,
                      :watched_category_ids,
-                     :private_messages_stats
+                     :private_messages_stats,
+                     :avatar_type
 
 
   def auto_track_topics_after_msecs
@@ -103,10 +100,6 @@ class UserSerializer < BasicUserSerializer
 
   def stats
     UserAction.stats(object.id, scope)
-  end
-
-  def gravatar_template
-    User.gravatar_template(object.email)
   end
 
   def include_suspended?

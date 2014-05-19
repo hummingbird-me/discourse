@@ -8,7 +8,6 @@
 **/
 export default Discourse.ObjectController.extend({
 
-  allowAvatarUpload: Discourse.computed.setting('allow_uploaded_avatars'),
   allowUserLocale: Discourse.computed.setting('allow_user_locale'),
 
   selectedCategories: function(){

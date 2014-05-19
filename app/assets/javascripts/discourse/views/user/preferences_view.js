@@ -37,7 +37,7 @@ Discourse.PreferencesView = Discourse.View.extend({
     });
     $upload.on("fileuploaddone", function(e, data) {
       if(data.result.url) {
-        self.set("controller.model.profile_background", data.result.url);
+        self.set("controller.model.profile_background_url", data.result.url);
       } else {
         bootbox.alert(I18n.t('post.errors.upload'));
       }

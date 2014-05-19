@@ -1,82 +1,81 @@
-    a.no-href {
+a.no-href {
   cursor: pointer;
 }
 
-body {
-    button.ok {
-    background: $success;
+button.ok {
+  background: $success;
+  color: $secondary;
+  @include hover {
+    background: lighten($success, 10%);
     color: $secondary;
-    @include hover {
-      background: lighten($success, 10%);
-      color: $secondary;
-    }
   }
-  button.cancel {
-    background: $danger;
+}
+button.cancel {
+  background: $danger;
+  color: $secondary;
+  @include hover {
+    background: lighten($danger, 10%);
     color: $secondary;
-    @include hover {
-      background: lighten($danger, 10%);
-      color: $secondary;
-    }
   }
+}
 
-  .coldmap-high {
-    color: scale-color($tertiary, $lightness: 40%) !important;
-  }
-  .coldmap-med {
-    color: $tertiary !important;
-  }
-  .coldmap-low {
-    color: scale-color($tertiary, $lightness: -10%) !important;
-  }
-  .heatmap-high {
-    color: scale-color($danger, $lightness: 30%) !important;
-  }
-  .heatmap-med {
-    color: $danger  !important;
-  }
-  .heatmap-low {
-    color: darken($danger, 10%) !important;
-  }
-  #loading-message {
-    position: absolute;
-    font-size: 30px;
-    text-align: center;
-    top: 120px;
-    left: 500px;
-    color: $primary;
-  }
-    .top-space {
-    margin-top: 10px;
-  }
-  ul.breadcrumb {
-    margin: 0 10px 0 10px;
-  }
+.coldmap-high {
+  color: scale-color($tertiary, $lightness: 40%) !important;
+}
+.coldmap-med {
+  color: $tertiary !important;
+}
+.coldmap-low {
+  color: scale-color($tertiary, $lightness: -10%) !important;
+}
+.heatmap-high {
+  color: scale-color($danger, $lightness: 30%) !important;
+}
+.heatmap-med {
+  color: $danger  !important;
+}
+.heatmap-low {
+  color: darken($danger, 10%) !important;
+}
+#loading-message {
+  position: absolute;
+  font-size: 30px;
+  text-align: center;
+  top: 120px;
+  left: 500px;
+  color: $primary;
+}
+.top-space {
+  margin-top: 10px;
+}
+ul.breadcrumb {
+  margin: 0 10px 0 10px;
+}
 .message {
-    @include border-radius-all(8px);
-    background-color: $secondary;
-    padding: 14px;
-    h2 {
-      margin-bottom: 20px;
-    }
-    p {
-      font-size: 20px;
-    }
+  @include border-radius-all(8px);
+  background-color: $secondary;
+  padding: 14px;
+  h2 {
+    margin-bottom: 20px;
   }
-    #footer {
-    .container {
-      height: 50px;
-      .contents {
-        padding-top: 10px;
-        a[href] {
-          color: $secondary;
-        }
+  p {
+    font-size: 20px;
+  }
+}
+#footer {
+  .container {
+    height: 50px;
+    .contents {
+      padding-top: 10px;
+      a[href] {
+        color: $secondary;
       }
     }
   }
-    .clear-transitions {
-    @include transition(none !important);
-  }
+}
+.clear-transitions {
+  @include transition(none !important);
+}
 
 .tip {
   display: inline-block;
@@ -87,7 +86,6 @@ body {
     color: $danger;
   }
 }
-
 
 #wmd-input {
   resize: none;
@@ -133,30 +131,60 @@ body {
 
 //loading spinner fade-in
 @-webkit-keyframes spinner {
-    from {opacity: 0}
-    to {opacity: 1}
-}@keyframes fade {
-    from {opacity: 0}
-    to {opacity: 1}
+  from {opacity: 0}
+  to {opacity: 1}
+}
+@keyframes fade {
+  from {opacity: 0}
+  to {opacity: 1}
 }
 
 .avatar {
   @include border-radius-all(2px);
+  display: inline-block;
+  font-style: normal !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  color: #FFF !important;
+  text-shadow: rgba(0, 0, 0, .4) 0 1px 1px;
 }
 
-.avatar-wrapper {
-  background-color: $secondary;
-  display: inline-block;
-  border: 1px solid scale-color($primary, $lightness: 90%);
-  @include border-radius-all(5px);
-  img {
-    @include border-radius-all(4px);
-  }
+.avatar-20  { width:  20px; height:  20px; line-height:  20px; font-size:  15px; }
+.avatar-25  { width:  25px; height:  25px; line-height:  25px; font-size:  20px; }
+.avatar-32  { width:  32px; height:  32px; line-height:  32px; font-size:  25px; }
+.avatar-45  { width:  45px; height:  45px; line-height:  45px; font-size:  40px; }
+.avatar-120 { width: 120px; height: 120px; line-height: 120px; font-size: 110px; }
+
+// palette of 216 optimally disctinct colors
+// cf. http://tools.medialab.sciences-po.fr/iwanthue/index.php
+// parameters used:
+//   - H: 0 - 360
+//   - C: 0 - 2
+//   - L: 0.75 - 1.5
+$avatar-colors: "#B56DD6","#8CFD01","#FC701A","#7FEFDA","#96953C","#F99E9F","#3CA5E5","#1EDE79","#F8EC2E","#F73C5D","#E3DDE7","#EAFFA2",
+                "#F651AD","#5CA905","#40936C","#85847F","#957DB2","#D6704B","#EDAA44","#FCBAFF","#2F91A3","#F8F5CC","#CBFB57","#5CDCFE",
+                "#32D19C","#51FE63","#409D41","#F9B183","#6B8DE7","#C2698A","#95875D","#C0FAC1","#C2B101","#F684D8","#A9CBFA","#E5C3B0",
+                "#FF498B","#B9F781","#D27925","#AEE2E3","#E1BF75","#F1D056","#78A28C","#B17D84","#3BB2AC","#FDABC8","#AD851F","#88D71C",
+                "#6194BB","#FE7E84","#42C64B","#70981E","#AC93F4","#E570AB","#F183F7","#46D22D","#BD7D4A","#FF62D4","#7DFCCA","#F6534B",
+                "#A7F49D","#F0E2A1","#E0D0FE","#DFAA0D","#DF652D","#F98E1D","#878802","#509453","#67F5A0","#C6D922","#F5C9DE","#E1EE5C",
+                "#17B171","#6084C0","#36CCD6","#B173B1","#768E69","#ECFFFE","#49B6D7","#D28B12","#F3E98C","#D16C5F","#F8BBBF","#D399EE",
+                "#C7F120","#86A050","#89F58B","#F8F0E0","#F48CAA","#2F9286","#CFB1F7","#E7AB61","#2289D5","#D9F479","#FE9BD9","#B0F1D6",
+                "#619336","#FE8356","#EB565F","#8378D1","#7F88B3","#1BC5F9","#9BF7B5","#3AE362","#97ABFE","#36D4B3","#F68F48","#95C923",
+                "#A16FC6","#CBDEFD","#2FAC7E","#E27E84","#FCED5D","#F57A93","#1D8EEC","#B47099","#958945","#459524","#4DF1B4","#A49181",
+                "#6A9692","#A67E45","#FBA534","#F8DBB8","#63A2EE","#969675","#C7785D","#F5C369","#69F84A","#4BF0D2","#987C84","#AE8BFD",
+                "#A57A71","#80EBFD","#C17C38","#40B918","#3DC5B2","#42B766","#EF406A","#DF56A3","#50C49C","#A4F875","#D36483","#2F96C2",
+                "#B69A29","#EF91EB","#BCBE04","#899A1C","#97FB33","#F7C433","#ECEF00","#FFE030","#AF8B38","#A0F1F1","#38CD72","#4EFE76",
+                "#F6B594","#E7D1EA","#42A886","#41C85E","#63BCF8","#B7FE5D","#5D9F93","#FDDBA2","#2BC77C","#489E66","#A072D9","#E47709",
+                "#31EDA4","#6EC025","#AFED23","#C0F1CA","#84AD2A","#57E0D5","#EF6429","#C3FEA9","#76FBB1","#78F723","#CFE5F7","#F3A141",
+                "#FFA79B","#299392","#A7F6BF","#94C3FC","#BEF58C","#569E12","#9EF9DE","#FFF78E","#57E4F7","#D0D41A","#779EF7","#5E945A",
+                "#F17204","#4F96AB","#A1882D","#91838B","#E0F686","#BC7A83","#F9FDDB","#F28003","#FD7330","#F386AE","#70FA9B","#CC7F07",
+                "#39A441","#5EF0D8","#3B88E1","#D0FDC1","#968554","#FBDF1C","#92F685","#FE8280","#D6A615","#EF8589","#EC74B2","#709BF6";
+
+@for $i from 1 through length($avatar-colors) {
+  $color: nth($avatar-colors, $i);
+  .avatar-color-#{$i - 1} { background-color: #{$color}; }
 }
 
 .profiler-results.profiler-left {
   top: 60px !important;
-}
-
-
 }

@@ -18,29 +18,32 @@ Discourse.PreferencesRoute = Discourse.RestrictedUserRoute.extend({
 
   actions: {
     showAvatarSelector: function() {
-      Discourse.Route.showModal(this, 'avatar-selector');
-      // all the properties needed for displaying the avatar selector modal
-      this.controllerFor('avatar-selector').setProperties(this.modelFor('user').getProperties(
-        'username', 'email',
-        'has_uploaded_avatar', 'use_uploaded_avatar',
-        'gravatar_template', 'uploaded_avatar_template'));
+      var self = this,
+          user = this.modelFor('user'),
+          avatarSelector = this.controllerFor('avatar-selector');
+
+      user.findAvatars().then(function (avatars) {
+        avatarSelector.setProperties({
+          username: user.get("username"),
+          email: user.get("email"),
+          avatar_type: user.get("avatar_type"),
+          avatars: avatars
+        });
+
+        Discourse.Route.showModal(self, 'avatar-selector');
+      });
     },
 
+    updateLocalGravatar: function() { this.modelFor("user").updateGravatar(); },
+
     saveAvatarSelection: function() {
-      var user = this.modelFor('user');
-      var avatarSelector = this.controllerFor('avatar-selector');
+      var user = this.modelFor('user'),
+          avatarSelector = this.controllerFor('avatar-selector');
       // sends the information to the server if it has changed
-      if (avatarSelector.get('use_uploaded_avatar') !== user.get('use_uploaded_avatar')) {
-        user.toggleAvatarSelection(avatarSelector.get('use_uploaded_avatar'));
+      if (avatarSelector.get('avatar_type') !== user.get('avatar_type')) {
+        user.changeSelectedAvatar(avatarSelector.get('avatar_type'));
       }
-      // saves the data back
-      user.setProperties(avatarSelector.getProperties(
-        'has_uploaded_avatar',
-        'use_uploaded_avatar',
-        'gravatar_template',
-        'uploaded_avatar_template'
-      ));
-      user.set('avatar_template', avatarSelector.get('avatarTemplate'));
+      user.setProperties(avatarSelector.getProperties("avatar_type", "avatar_template"));
       avatarSelector.send('closeModal');
     },
 

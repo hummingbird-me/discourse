@@ -1158,7 +1158,7 @@ describe UsersController do
           xhr :post, :upload_user_image, username: user.username, file: user_image, user_image_type: "profile_background"
           user.reload
 
-          user.profile_background.should == "/uploads/default/1/1234567890123456.png"
+          user.profile_background_url.should == "/uploads/default/1/1234567890123456.png"
 
           # returns the url, width and height of the uploaded image
           json = JSON.parse(response.body)
@@ -1215,7 +1215,7 @@ describe UsersController do
             Upload.expects(:create_for).returns(upload)
             xhr :post, :upload_user_image, username: user.username, file: user_image_url, user_image_type: "profile_background"
             user.reload
-            user.profile_background.should == "/uploads/default/1/1234567890123456.png"
+            user.profile_background_url.should == "/uploads/default/1/1234567890123456.png"
 
             # returns the url, width and height of the uploaded image
             json = JSON.parse(response.body)
@@ -1284,7 +1284,7 @@ describe UsersController do
 
       it 'it successful' do
         xhr :put, :clear_profile_background, username: user.username
-        user.reload.profile_background.should == ""
+        user.reload.profile_background_url.should == ""
         response.should be_success
       end
 

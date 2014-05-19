@@ -297,44 +297,71 @@ class UsersController < ApplicationController
 
     results = UserSearch.new(term, topic_id: topic_id, searching_user: current_user).search
 
-    user_fields = [:username, :use_uploaded_avatar, :upload_avatar_template, :uploaded_avatar_id]
+    user_fields = [:username, :avatar_template]
     user_fields << :name if SiteSetting.enable_names?
 
-    to_render = { users: results.as_json(only: user_fields, methods: :avatar_template) }
+    to_render = { users: results.as_json(only: user_fields) }
 
     if params[:include_groups] == "true"
-      to_render[:groups] = Group.search_group(term, current_user).map {|m| {:name=>m.name, :usernames=> m.usernames.split(",")} }
+      to_render[:groups] = Group.search_group(term, current_user).map { |m| { name: m.name, usernames: m.usernames.split(",") } }
     end
 
     render json: to_render
-  end
-
-  # [LEGACY] avatars in quotes/oneboxes might still be pointing to this route
-  # fixing it requires a rebake of all the posts
-  def avatar
-    user = User.find_by(username_lower: params[:username].downcase)
-    if user.present?
-      size = determine_avatar_size(params[:size])
-      url = user.avatar_template.gsub("{size}", size.to_s)
-      expires_in 1.day
-      redirect_to url
-    else
-      raise ActiveRecord::RecordNotFound
-    end
-  end
-
-  def determine_avatar_size(size)
-    size = size.to_i
-    size = 64 if size == 0
-    size = 10 if size < 10
-    size = 128 if size > 128
-    size
   end
 
   # LEGACY: used by the API
   def upload_avatar
     params[:user_image_type] = "avatar"
     upload_user_image
+  end
+
+  def avatars
+    user = fetch_user_from_params
+    guardian.ensure_can_edit!(user)
+
+    avatars = { generated: Avatar.css_avatar_template(user.username) }
+
+    gravatar = user.gravatar
+    avatars[:gravatar] = {
+      external: Avatar.gravatar_template(user.email),
+      local: gravatar ? Avatar.img_avatar_template(gravatar.url) : nil
+    }
+
+    uploaded = SiteSetting.allow_uploaded_avatars ? user.uploaded_avatar : nil
+    avatars[:uploaded] = uploaded ? Avatar.img_avatar_template(uploaded.url) : nil
+
+    render json: avatars
+  end
+
+  def update_gravatar
+    user = fetch_user_from_params
+    guardian.ensure_can_edit!(user)
+
+    Jobs.enqueue(:download_gravatar, user_id: user.id)
+
+    render nothing: true
+  end
+
+  def select_avatar
+    params.require(:avatar_type)
+    user = fetch_user_from_params
+    guardian.ensure_can_edit!(user)
+
+    user.avatar_type = params[:avatar_type].to_i
+
+    case user.avatar_type
+    when Avatar.types[:gravatar]
+      user.avatar_url = Discourse.store.avatar_template(user.gravatar)
+    when Avatar.types[:uploaded]
+      user.avatar_url = Discourse.store.avatar_template(user.uploaded_avatar)
+    else
+      user.avatar_url = nil
+    end
+
+    user.avatar_template = Avatar.avatar_template_for(user)
+    user.save
+
+    render nothing: true
   end
 
   def upload_user_image
@@ -350,36 +377,32 @@ class UsersController < ApplicationController
       return render status: 422, text: I18n.t("upload.images.unknown_image_type")
     end
 
-    upload = Upload.create_for(user.id, image.file, image.filename, image.filesize)
+    # set the appropriate usage
+    options = { usage: Upload.usages[params[:user_image_type].to_sym] }
+    options[:avatar_type] = Upload.avatar_types[:uploaded] if params[:user_image_type] == "avatar"
+    # create the upload
+    upload = Upload.create_for(user.id, image.file, image.filename, image.filesize, options)
 
     if upload.errors.empty?
       case params[:user_image_type]
       when "avatar"
-        upload_avatar_for(user, upload)
+        user.upload_avatar!(upload)
+        render json: { template: user.avatar_template, width: upload.width, height: upload.height }
       when "profile_background"
-        upload_profile_background_for(user, upload)
+        user.upload_profile_background!(upload)
+        render json: { url: upload.url, width: upload.width, height: upload.height }
       end
     else
       render status: 422, text: upload.errors.full_messages
     end
   end
 
-  def toggle_avatar
-    params.require(:use_uploaded_avatar)
-    user = fetch_user_from_params
-    guardian.ensure_can_edit!(user)
-
-    user.use_uploaded_avatar = params[:use_uploaded_avatar]
-    user.save!
-
-    render nothing: true
-  end
-
   def clear_profile_background
     user = fetch_user_from_params
     guardian.ensure_can_edit!(user)
 
-    user.profile_background = ""
+    user.profile_background.delete if user.profile_background
+    user.profile_background_url = nil
     user.save!
 
     render nothing: true
@@ -418,20 +441,6 @@ class UsersController < ApplicationController
                end
 
       AvatarUploadService.new(file, source)
-    end
-
-    def upload_avatar_for(user, upload)
-      user.upload_avatar(upload)
-      Jobs.enqueue(:generate_avatars, user_id: user.id, upload_id: upload.id)
-
-      render json: { url: upload.url, width: upload.width, height: upload.height }
-    end
-
-    def upload_profile_background_for(user, upload)
-      user.upload_profile_background(upload)
-      # TODO: add a resize job here
-
-      render json: { url: upload.url, width: upload.width, height: upload.height }
     end
 
     def respond_to_suspicious_request

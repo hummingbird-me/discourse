@@ -53,9 +53,9 @@ class OptimizedImage < ActiveRecord::Base
       end
 
       # close && remove temp file
-      temp_file.close!
+      temp_file.try(:close!)
       # make sure we remove the cached copy from external stores
-      external_copy.close! if Discourse.store.external?
+      external_copy.try(:close!) if Discourse.store.external?
     end
 
     thumbnail

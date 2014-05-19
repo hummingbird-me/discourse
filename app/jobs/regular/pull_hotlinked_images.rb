@@ -4,7 +4,6 @@ require_dependency 'file_helper'
 module Jobs
 
   class PullHotlinkedImages < Jobs::Base
-    include UrlHelper
 
     def initialize
       # maximum size of the file in bytes
@@ -67,7 +66,7 @@ module Jobs
             Rails.logger.error("Failed to pull hotlinked image: #{src}\n" + e.message + "\n" + e.backtrace.join("\n"))
           ensure
             # close & delete the temp file
-            hotlinked && hotlinked.close!
+            hotlinked.try(:close!)
           end
         end
 

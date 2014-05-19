@@ -1,3 +1,4 @@
+require_dependency 'avatar'
 require_dependency 'email'
 require_dependency 'email_token'
 require_dependency 'trust_level'
@@ -7,11 +8,9 @@ require_dependency 'discourse'
 require_dependency 'post_destroyer'
 require_dependency 'user_name_suggester'
 require_dependency 'pretty_text'
-require_dependency 'url_helper'
 
 class User < ActiveRecord::Base
   include Roleable
-  include UrlHelper
   include HasCustomFields
 
   has_many :posts
@@ -32,6 +31,10 @@ class User < ActiveRecord::Base
   has_many :invites, dependent: :destroy
   has_many :topic_links, dependent: :destroy
   has_many :uploads
+  has_many :avatars, -> { where(usage: Upload.usages[:avatar]) }, class_name: 'Upload', dependent: :destroy
+  has_many :group_users, dependent: :destroy
+  has_many :groups, through: :group_users
+  has_many :secure_categories, through: :groups, source: :categories
 
   has_one :facebook_user_info, dependent: :destroy
   has_one :twitter_user_info, dependent: :destroy
@@ -39,17 +42,14 @@ class User < ActiveRecord::Base
   has_one :oauth2_user_info, dependent: :destroy
   has_one :user_stat, dependent: :destroy
   has_one :single_sign_on_record, dependent: :destroy
-  belongs_to :approved_by, class_name: 'User'
-  belongs_to :primary_group, class_name: 'Group'
-
-  has_many :group_users, dependent: :destroy
-  has_many :groups, through: :group_users
-  has_many :secure_categories, through: :groups, source: :categories
-
   has_one :user_search_data, dependent: :destroy
   has_one :api_key, dependent: :destroy
+  has_one :profile_background, -> { where(usage: Upload.usages[:profile_background]) }, class_name: 'Upload', dependent: :destroy
+  has_one :gravatar, -> { where(usage: Upload.usages[:avatar], avatar_type: Upload.avatar_types[:gravatar]) }, class_name: 'Upload'
+  has_one :uploaded_avatar, -> { where(usage: Upload.usages[:avatar], avatar_type: Upload.avatar_types[:uploaded]) }, class_name: 'Upload'
 
-  belongs_to :uploaded_avatar, class_name: 'Upload', dependent: :destroy
+  belongs_to :approved_by, class_name: 'User'
+  belongs_to :primary_group, class_name: 'Group'
 
   delegate :last_sent_email_address, :to => :email_logs
 
@@ -63,6 +63,7 @@ class User < ActiveRecord::Base
   before_save :cook
   before_save :update_username_lower
   before_save :ensure_password_is_hashed
+
   after_initialize :add_trust_level
   after_initialize :set_default_email_digest
   after_initialize :set_default_external_links_in_new_tab
@@ -169,6 +170,9 @@ class User < ActiveRecord::Base
     self.username = new_username
 
     if current_username.downcase != new_username.downcase && valid?
+      if avatar_type == Avatar.types[:generated]
+        avatar_template = Avatar.css_avatar_template(new_username)
+      end
       DiscourseHub.username_operation { DiscourseHub.change_username(current_username, new_username) }
     end
 
@@ -212,12 +216,8 @@ class User < ActiveRecord::Base
     send_approval_email if save and send_mail
   end
 
-  def self.email_hash(email)
-    Digest::MD5.hexdigest(email.strip.downcase)
-  end
-
   def email_hash
-    User.email_hash(email)
+    Avatar.email_hash(email)
   end
 
   def unread_notifications_by_type
@@ -331,30 +331,47 @@ class User < ActiveRecord::Base
     update_column(:last_seen_at, now)
   end
 
-  def self.gravatar_template(email)
-    email_hash = self.email_hash(email)
-    "//www.gravatar.com/avatar/#{email_hash}.png?s={size}&r=pg&d=identicon"
-  end
-
   # Don't pass this up to the client - it's meant for server side use
   # This is used in
-  #   - self oneboxes in open graph data
   #   - emails
-  def small_avatar_url
-    template = avatar_template
-    schemaless template.gsub("{size}", "45")
+  #   - embeded comments
+  def small_avatar
+    return if avatar_template.blank?
+    avatar_template.gsub("{size}", "45")
+                   .gsub("{raw_size}", "45")
+                   .gsub("{title}", username)
+                   .gsub("{class}", "")
   end
 
-  # the avatars might take a while to generate
-  # so return the url of the original image in the meantime
-  def uploaded_avatar_path
-    return unless SiteSetting.allow_uploaded_avatars? && use_uploaded_avatar
-    avatar_template = uploaded_avatar_template.present? ? uploaded_avatar_template : uploaded_avatar.try(:url)
-    schemaless absolute avatar_template
+  def upload_avatar!(upload)
+    # HACK to remove the other "uploaded_avatar"
+    self.avatars.where("avatar_type = #{Upload.avatar_types[:uploaded]} AND id <> #{upload.id}").each(&:delete)
+    save_avatar(upload, :uploaded)
   end
 
-  def avatar_template
-    uploaded_avatar_path || User.gravatar_template(id != -1 ? email : "team@discourse.org")
+  def upload_gravatar!(upload)
+    # HACK to remove the other "gravatar"
+    self.avatars.where("avatar_type = #{Upload.avatar_types[:gravatar]} AND id <> #{upload.id}").each(&:delete)
+    save_avatar(upload, :gravatar)
+  end
+
+  def save_avatar(upload, avatar_type)
+    # set the type selected
+    self.avatar_type = Avatar.types[avatar_type]
+    # set temporary avatar
+    self.avatar_url = upload.url
+    self.avatar_template = Avatar.avatar_template_for(self)
+    # save the changes
+    self.save!
+    # launch the job that will generate the thumbnails
+    Jobs.enqueue(:generate_avatar_thumbnails, user_id: self.id, upload_id: upload.id)
+  end
+
+  def upload_profile_background!(upload)
+    self.profile_background.delete if self.profile_background
+    self.profile_background = upload
+    self.profile_background_url = upload.url
+    self.save!
   end
 
   # The following count methods are somewhat slow - definitely don't use them in a loop.
@@ -535,24 +552,8 @@ class User < ActiveRecord::Base
     end
   end
 
-  def has_uploaded_avatar
-    uploaded_avatar.present?
-  end
-
   def added_a_day_ago?
     created_at > 1.day.ago
-  end
-
-  def upload_avatar(upload)
-    self.uploaded_avatar_template = nil
-    self.uploaded_avatar = upload
-    self.use_uploaded_avatar = true
-    self.save!
-  end
-
-  def upload_profile_background(upload)
-    self.profile_background = upload.url
-    self.save!
   end
 
   def generate_api_key(created_by)

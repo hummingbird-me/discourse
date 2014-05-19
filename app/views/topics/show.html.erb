@@ -1,6 +1,7 @@
 <h2>
    <%= render_topic_title(@topic_view.topic) %>
 </h2>
+
 <hr/>
 
 <% @topic_view.posts.each do |post| %>
@@ -19,7 +20,6 @@
   <% end %>
 <% end %>
 
-
 <p>
   <% if @topic_view.prev_page %>
     <%= link_to t(:prev_page), @topic_view.prev_page_path, rel: 'prev' %>
@@ -29,14 +29,11 @@
   <% end %>
 </p>
 
-
 <p><%= t 'powered_by_html' %></p>
 
 <% content_for :head do %>
   <%= auto_discovery_link_tag(@topic_view, {action: :feed, slug: @topic_view.topic.slug, topic_id: @topic_view.topic.id}, title: t('rss_posts_in_topic', topic: @topic_view.title), type: 'application/rss+xml') %>
-  <%= crawlable_meta_data(title: @topic_view.title,
-                          description: @topic_view.summary,
-                          image: @topic_view.image_url) %>
+  <%= crawlable_meta_data(title: @topic_view.title, description: @topic_view.summary) %>
 <% end %>
 
 <% content_for(:title) { @topic_view.title } %>

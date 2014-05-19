@@ -4,6 +4,9 @@ require_dependency "file_helper"
 require_dependency "validators/upload_validator"
 
 class Upload < ActiveRecord::Base
+  enum usage: { image: 0, attachment: 1, avatar: 2, profile_background: 3 }
+  enum avatar_type: { gravatar: 1, uploaded: 2 }
+
   belongs_to :user
 
   has_many :post_uploads, dependent: :destroy
@@ -26,8 +29,7 @@ class Upload < ActiveRecord::Base
 
   def create_thumbnail!(width, height)
     return unless SiteSetting.create_thumbnails?
-    thumbnail = OptimizedImage.create_for(self, width, height)
-    if thumbnail
+    if thumbnail = OptimizedImage.create_for(self, width, height)
       optimized_images << thumbnail
       self.width = width
       self.height = height
@@ -49,6 +51,8 @@ class Upload < ActiveRecord::Base
   # options
   #   - content_type
   #   - origin
+  #   - usage
+  #   - avatar_type
   def self.create_for(user_id, file, filename, filesize, options = {})
     # compute the sha
     sha1 = Digest::SHA1.file(file).hexdigest
@@ -71,10 +75,16 @@ class Upload < ActiveRecord::Base
       )
       # trim the origin if any
       upload.origin = options[:origin][0...1000] if options[:origin]
+      # set the usage if provided
+      upload.usage = options[:usage] if options[:usage]
+      # set the avatar_type if provided
+      upload.avatar_type = options[:avatar_type] if options[:avatar_type]
 
       # deal with width & height for images
       if FileHelper.is_image?(filename)
         begin
+          # it's an image
+          upload.usage = Upload.usages[:image] unless upload.usage
           # retrieve image info
           image_info = FastImage.new(file, raise_on_failure: true)
             # compute image aspect ratio
@@ -90,6 +100,9 @@ class Upload < ActiveRecord::Base
         end
 
         return upload unless upload.errors.empty?
+      else
+        # it's an attachment
+        upload.usage = Upload.usages[:attachment] unless upload.usage
       end
 
       # create a db record (so we can use the id)

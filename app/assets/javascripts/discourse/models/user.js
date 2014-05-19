@@ -72,11 +72,11 @@ Discourse.User = Discourse.Model.extend({
     @type {String}
   **/
   profileBackground: function() {
-    var background = this.get('profile_background');
+    var background = this.get('profile_background_url');
     if(Em.isEmpty(background) || !Discourse.SiteSettings.allow_profile_backgrounds) { return; }
 
     return 'background-image: url(' + background + ')';
-  }.property('profile_background'),
+  }.property('profile_background_url'),
 
   statusIcon: function() {
     var name = Handlebars.Utils.escapeExpression(this.get('name')),
@@ -325,18 +325,20 @@ Discourse.User = Discourse.Model.extend({
     });
   },
 
-  /*
-    Change avatar selection
+  findAvatars: function() {
+    return Discourse.ajax("/users/" + this.get("username") + "/preferences/avatars.json");
+  },
 
-    @method toggleAvatarSelection
-    @param {Boolean} useUploadedAvatar true if the user is using the uploaded avatar
-    @returns {Promise} the result of the toggle avatar selection
-  */
-  toggleAvatarSelection: function(useUploadedAvatar) {
-    return Discourse.ajax("/users/" + this.get("username_lower") + "/preferences/avatar/toggle", {
-      type: 'PUT',
-      data: { use_uploaded_avatar: useUploadedAvatar }
-    });
+  updateGravatar: function() {
+    return Discourse.ajax("/users/" + this.get("username") + "/preferences/update_gravatar.json", { type: "POST" });
+  },
+
+  changeSelectedAvatar: function(avatarType) {
+    return Discourse.ajax("/users/" + this.get("username") + "/preferences/avatars/select.json",
+      {
+        type: "PUT",
+        data: { avatar_type: avatarType }
+      });
   },
 
   /*
@@ -351,7 +353,7 @@ Discourse.User = Discourse.Model.extend({
       type: 'PUT',
       data: { }
     }).then(function() {
-      user.set('profile_background', null);
+      user.set('profile_background_url', null);
     });
   },
 

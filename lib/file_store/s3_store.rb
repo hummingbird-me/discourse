@@ -72,11 +72,11 @@ module FileStore
     end
 
     def get_path_for_avatar(file, avatar, size)
-      relative_avatar_template(avatar).gsub("{size}", size.to_s)
+      relative_avatar_template(avatar).gsub("{raw_size}", size.to_s)
     end
 
     def relative_avatar_template(avatar)
-      "avatars/#{avatar.sha1}/{size}#{avatar.extension}"
+      "avatars/#{avatar.sha1}/{raw_size}#{avatar.extension}"
     end
 
     def store_file(file, path, filename = nil, content_type = nil)

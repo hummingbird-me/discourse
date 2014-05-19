@@ -2,7 +2,7 @@ require "image_sorcery"
 
 module Jobs
 
-  class GenerateAvatars < Jobs::Base
+  class GenerateAvatarThumbnails < Jobs::Base
 
     def execute(args)
       raise Discourse::ImageMagickMissing.new unless system("command -v convert >/dev/null;")
@@ -48,16 +48,17 @@ module Jobs
             end
           ensure
             # close && remove temp file
-            temp_file && temp_file.close!
+            temp_file.try(:close!)
           end
         end
       end
 
       # make sure we remove the cached copy from external stores
-      external_copy.close! if Discourse.store.external?
+      external_copy.try(:close!) if Discourse.store.external?
 
       # attach the avatar to the user
-      user.uploaded_avatar_template = Discourse.store.avatar_template(upload)
+      user.avatar_url = Discourse.store.avatar_template(upload)
+      user.avatar_template = Avatar.avatar_template_for(user)
       user.save!
 
     end

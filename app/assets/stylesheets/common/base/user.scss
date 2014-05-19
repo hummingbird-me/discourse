@@ -1,27 +1,24 @@
 
 // styling of bottom section
-.user-stream .child-actions {
-  margin-top: 8px;
-  .avatar-link {
-    float: none;
-  }
-  .fa {
-    width: 15px;
-    display: inline-block;
-    color: $primary;
-  }
-  .avatar-wrapper {
-    border: none;
-  }
-  .avatar-link {
-    margin-right: 3px;
-
+.user-stream {
+  .child-actions {
+    margin-top: 8px;
+    .avatar-link {
+      float: none;
+    }
+    .fa {
+      width: 15px;
+      display: inline-block;
+      color: $primary;
+    }
+    .avatar-link {
+      margin-right: 3px;
+    }
   }
 }
 
 .user-navigation {
-
-    .map {
+  .map {
     height: 50px;
   }
   .avatar {

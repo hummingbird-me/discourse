@@ -12,14 +12,11 @@ Discourse.AvatarSelectorView = Discourse.ModalBodyView.extend({
   title: I18n.t('user.change_avatar.title'),
   uploading: false,
   uploadProgress: 0,
-  useGravatar: Em.computed.not("controller.use_uploaded_avatar"),
-  canSaveAvatarSelection: Em.computed.or("useGravatar", "controller.has_uploaded_avatar"),
-  saveDisabled: Em.computed.not("canSaveAvatarSelection"),
   imageIsNotASquare : false,
 
   didInsertElement: function() {
-    var self = this;
-    var $upload = $("#avatar-input");
+    var self = this,
+        $upload = $("#avatar-input");
 
     this._super();
 
@@ -58,21 +55,14 @@ Discourse.AvatarSelectorView = Discourse.ModalBodyView.extend({
 
     // when the upload is successful
     $upload.on("fileuploaddone", function (e, data) {
-      // make sure we have a url
-      if (data.result.url) {
-        // indicates the users is using an uploaded avatar
-        self.get("controller").setProperties({
-          has_uploaded_avatar: true,
-          use_uploaded_avatar: true
-        });
-        // display a warning whenever the image is not a square
-        self.set("imageIsNotASquare", data.result.width !== data.result.height);
-        // in order to be as much responsive as possible, we're cheating a bit here
-        // indeed, the server gives us back the url to the file we've just uploaded
-        // often, this file is not a square, so we need to crop it properly
-        // this will also capture the first frame of animated avatars when they're not allowed
-        Discourse.Utilities.cropAvatar(data.result.url, data.files[0].type).then(function(avatarTemplate) {
-          self.get("controller").set("uploaded_avatar_template", avatarTemplate);
+      // make sure we have a template
+      if (data.result.template) {
+        Em.run.next(function () {
+          // indicates the users is using an uploaded avatar
+          self.get("controller").set("avatar_type", 2);
+          self.get("controller").set("avatars.uploaded", data.result.template);
+          // display a warning whenever the image is not a square
+          self.set("imageIsNotASquare", data.result.width !== data.result.height);
         });
       } else {
         bootbox.alert(I18n.t('post.errors.upload'));
@@ -99,10 +89,9 @@ Discourse.AvatarSelectorView = Discourse.ModalBodyView.extend({
   selectedChanged: function() {
     var self = this;
     Em.run.next(function() {
-      var value = self.get('controller.use_uploaded_avatar') ? 'uploaded_avatar' : 'gravatar';
-      $('input:radio[name="avatar"]').val([value]);
+      $('input:radio[name="avatar"]').val([self.get('controller.avatar_type')]);
     });
-  }.observes('controller.use_uploaded_avatar'),
+  }.observes('controller.avatar_type'),
 
   uploadButtonText: function() {
     return this.get("uploading") ? I18n.t("uploading") : I18n.t("upload");

@@ -14,11 +14,11 @@ class FileHelper
     tmp = Tempfile.new([tmp_file_name, extension])
 
     File.open(tmp.path, "wb") do |f|
-      downloaded = uri.open("rb", read_timeout: 5)
+      downloaded = open(url, read_timeout: 2)
       while f.size <= max_file_size && data = downloaded.read(max_file_size)
         f.write(data)
       end
-      downloaded.close!
+      downloaded.try(:close!)
     end
 
     tmp

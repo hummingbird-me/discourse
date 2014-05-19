@@ -4,8 +4,6 @@ require_dependency 'url_helper'
 require_dependency 'topics_bulk_action'
 
 class TopicsController < ApplicationController
-  include UrlHelper
-
   before_filter :ensure_logged_in, only: [:timings,
                                           :destroy_timings,
                                           :update,
@@ -60,7 +58,7 @@ class TopicsController < ApplicationController
 
     perform_show_response
 
-    canonical_url absolute_without_cdn(@topic_view.canonical_path)
+    canonical_url UrlHelper.absolute_without_cdn(@topic_view.canonical_path)
   end
 
   def wordpress

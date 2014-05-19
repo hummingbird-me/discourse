@@ -994,43 +994,6 @@ describe User do
 
   end
 
-  describe ".uploaded_avatar_path" do
-
-    let(:user) { build(:user, use_uploaded_avatar: true, uploaded_avatar_template: "/uploaded/avatar/template/{size}.png") }
-
-    it "returns nothing when uploaded avatars are not allowed" do
-      SiteSetting.expects(:allow_uploaded_avatars).returns(false)
-      user.uploaded_avatar_path.should be_nil
-    end
-
-    it "returns a schemaless avatar template" do
-      user.uploaded_avatar_path.should == "//test.localhost/uploaded/avatar/template/{size}.png"
-    end
-
-    it "returns a schemaless cdn-based avatar template" do
-      Rails.configuration.action_controller.stubs(:asset_host).returns("http://my.cdn.com")
-      user.uploaded_avatar_path.should == "//my.cdn.com/uploaded/avatar/template/{size}.png"
-    end
-
-  end
-
-  describe ".avatar_template" do
-
-    let(:user) { build(:user, email: "em@il.com") }
-
-    it "returns the uploaded_avatar_path by default" do
-      user.expects(:uploaded_avatar_path).returns("//discourse.org/uploaded/avatar.png")
-      user.avatar_template.should == "//discourse.org/uploaded/avatar.png"
-    end
-
-    it "returns the gravatar when no avatar has been uploaded" do
-      user.expects(:uploaded_avatar_path)
-      User.expects(:gravatar_template).with(user.email).returns("//gravatar.com/avatar.png")
-      user.avatar_template.should == "//gravatar.com/avatar.png"
-    end
-
-  end
-
   describe "update_posts_read!" do
     context "with a UserVisit record" do
       let!(:user) { Fabricate(:user) }
