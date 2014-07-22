@@ -4,6 +4,8 @@ module Jobs
     daily at: 4.hours
 
     def execute(args)
+      return
+
       # Demotions
       demoted_user_ids = []
       User.real.where(trust_level: TrustLevel.levels[:leader]).find_each do |u|
