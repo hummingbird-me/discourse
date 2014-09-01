@@ -27,8 +27,7 @@ function renderAvatar(user, options) {
       }
     }
 
-    // this is simply done to ensure we cache images correctly
-    var uploadedAvatarId = Em.get(user, 'uploaded_avatar_id') || Em.get(user, 'user.uploaded_avatar_id');
+    var avatarTemplate = Em.get(user, 'avatar_template') || Em.get(user, 'user.avatar_template');
 
     return Discourse.Utilities.avatarImg({
       size: options.imageSize,
