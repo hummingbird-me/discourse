@@ -1,5 +1,4 @@
 import registerUnbound from 'discourse/helpers/register-unbound';
-import avatarTemplate from 'discourse/lib/avatar-template';
 
 function renderAvatar(user, options) {
   options = options || {};
@@ -27,13 +26,13 @@ function renderAvatar(user, options) {
       }
     }
 
-    var avatarTemplate = Em.get(user, 'avatar_template') || Em.get(user, 'user.avatar_template');
+    var avatarTemplate = Em.get(user, 'avatar_template') || Em.get(user, 'user.avatar_template') || "https://hummingbird.me/default_avatar.jpg";
 
     return Discourse.Utilities.avatarImg({
       size: options.imageSize,
       extraClasses: Em.get(user, 'extras') || options.extraClasses,
       title: title || username,
-      avatarTemplate: avatarTemplate(username, uploadedAvatarId)
+      avatarTemplate: avatarTemplate
     });
   } else {
     return '';
